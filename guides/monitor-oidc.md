@@ -86,3 +86,31 @@ Repository validation (2026-10-09, Windows/Python 3.12):
 
 References: [PyJWT validation](https://pyjwt.readthedocs.io/en/stable/usage.html),
 [Authentik OAuth2](https://docs.goauthentik.io/add-secure-apps/providers/oauth2/).
+
+### Disposable browser integration check
+
+After building the frontend, set `PROXMENUX_TEST_BROWSER` to an already installed
+Chrome/Chromium executable and run:
+
+```sh
+python -m unittest discover -s AppImage/scripts/tests -p test_oidc_browser.py -v
+```
+
+The opt-in test requires Node with built-in WebSocket and free loopback port
+8008. It launches the compiled login UI, a mock OIDC provider on another TLS
+origin, and an isolated headless browser profile. All identities, credentials,
+certificates and signing keys are generated for this test and discarded. The
+browser trusts only that test certificate's SPKI; the backend verifies HTTPS
+against that test CA. No system trust store is changed and no real IdP is used.
+
+The test exercises the actual login button, real code exchange with PKCE,
+browser state cookies, desktop/mobile owner login, rejection of another
+subject sharing the owner's email, and protected-resource denial after clearing
+the browser session. Session clearing simulates the existing local-storage
+logout behavior; it is not an end-to-end test of the avatar-menu logout button
+or server-side session revocation. Monitoring APIs are stubs, not live data.
+
+The disposable browser check passed on installed Chrome in Windows. Linux
+AppImage packaging remains blocked in the available environment: Docker's
+engine is stopped, and the existing Ubuntu WSL lacks Flask, Node and
+appimagetool. No additional tooling was installed for this follow-up check.
