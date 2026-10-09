@@ -1,0 +1,9 @@
+{
+  "issuer": "https://identity.example/application/o/proxmenux/",
+  "origin": "https://monitor.example",
+  "client_id": "proxmenux",
+  "client_secret": "REPLACE_PRIVATELY_NOT_IN_GIT",
+  "subject": "EXACT_AUTHENTIK_USER_UUID",
+  "email": "owner@example.test",
+  "local_username": "EXISTING_LOCAL_RECOVERY_USERNAME"
+}

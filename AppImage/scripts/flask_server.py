@@ -222,6 +222,16 @@ post_install_versions.scan_at_startup()
 
 # Register Blueprints
 app.register_blueprint(auth_bp)
+from flask_oidc_routes import make_blueprint, load_settings, CallbackLogFilter, CallbackLogWriter
+import logging as _oidc_logging
+_oidc_logging.getLogger('werkzeug').addFilter(CallbackLogFilter())
+try:
+    oidc_settings = load_settings()
+except Exception:
+    # Never log private configuration, URLs or credentials on validation failure.
+    print('[ProxMenux] OIDC configuration invalid; local recovery login retained')
+    oidc_settings = None
+app.register_blueprint(make_blueprint(oidc_settings))
 app.register_blueprint(health_bp)
 app.register_blueprint(proxmenux_bp)
 app.register_blueprint(security_bp)
@@ -22776,6 +22786,7 @@ if __name__ == '__main__':
                 server = pywsgi.WSGIServer(
                     ('::', 8008),
                     app,
+                    log=CallbackLogWriter(__import__('sys').stderr),
                     ssl_context=ssl_context
                 )
                 gevent_available = True

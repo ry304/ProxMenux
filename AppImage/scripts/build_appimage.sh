@@ -113,6 +113,7 @@ cd "$SCRIPT_DIR"
 # Copy Flask server
 echo "📋 Copying Flask server..."
 cp "$SCRIPT_DIR/flask_server.py" "$APP_DIR/usr/bin/"
+cp "$SCRIPT_DIR/flask_oidc_routes.py" "$APP_DIR/usr/bin/"
 cp "$SCRIPT_DIR/flask_auth_routes.py" "$APP_DIR/usr/bin/" 2>/dev/null || echo "⚠️  flask_auth_routes.py not found"
 cp "$SCRIPT_DIR/auth_manager.py" "$APP_DIR/usr/bin/" 2>/dev/null || echo "⚠️  auth_manager.py not found"
 cp "$SCRIPT_DIR/jwt_middleware.py" "$APP_DIR/usr/bin/" 2>/dev/null || echo "⚠️  jwt_middleware.py not found"
@@ -301,13 +302,16 @@ echo "📦 Installing Python dependencies..."
 # the host, so the AppImage no longer needs any runtime translator.
 # Removing those pins also unblocks the h11>=0.14.0 family without the
 # conflict workaround we used to ship.
-# Note: cryptography removed due to Python version compatibility issues (PyO3 modules)
+# OIDC RS256 needs cryptography. Install its wheel with dependencies using the
+# same Python interpreter used by the AppImage runtime; fail the build if no
+# compatible wheel exists rather than shipping unverifiable OIDC tokens.
+pip3 install --target "$APP_DIR/usr/lib/python3/dist-packages" --upgrade \
+    --only-binary=:all: 'PyJWT[crypto]==2.15.1'
 pip3 install --target "$APP_DIR/usr/lib/python3/dist-packages" --upgrade --no-deps \
     flask \
     flask-cors \
     psutil \
     requests \
-    PyJWT \
     pyotp \
     segno \
     beautifulsoup4

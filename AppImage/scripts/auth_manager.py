@@ -328,14 +328,16 @@ def _maybe_rehash_password(password, current_hash):
     return None
 
 
-def generate_token(username):
+def generate_token(username, expires_at=None):
     """Generate a JWT token for the given username"""
     if not JWT_AVAILABLE:
         return None
 
     payload = {
         'username': username,
-        'exp': datetime.utcnow() + timedelta(hours=TOKEN_EXPIRATION_HOURS),
+        'exp': min(datetime.utcnow() + timedelta(hours=TOKEN_EXPIRATION_HOURS),
+                   datetime.utcfromtimestamp(expires_at)) if expires_at is not None else
+               datetime.utcnow() + timedelta(hours=TOKEN_EXPIRATION_HOURS),
         'iat': datetime.utcnow(),
         'iss': JWT_ISSUER,
         'aud': JWT_AUDIENCE,

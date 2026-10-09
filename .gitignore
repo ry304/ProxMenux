@@ -70,3 +70,6 @@ Thumbs.db
 
 # GitHub authentication
 .github/auth.sh
+.venv/
+__pycache__/
+*.pyc

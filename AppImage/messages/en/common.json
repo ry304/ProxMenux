@@ -2092,6 +2092,7 @@
     }
   },
   "login": {
+    "oidcSignIn": "Sign in with Authentik",
     "subtitle": "Sign in to access your dashboard",
     "username": "Username",
     "password": "Password",

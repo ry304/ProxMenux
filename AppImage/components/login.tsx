@@ -27,6 +27,28 @@ export function Login({ onLogin }: LoginProps) {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const lastAutoSubmittedTotp = useRef("")
+  const oidcChecked = useRef(false)
+  const [oidcEnabled, setOidcEnabled] = useState(false)
+
+  useEffect(() => {
+    if (oidcChecked.current) return
+    oidcChecked.current = true
+    fetch(getApiUrl("/api/auth/oidc/status"), { credentials: "same-origin" })
+      .then(response => response.json())
+      .then(async status => {
+        setOidcEnabled(status.enabled === true)
+        if (!status.enabled) return
+        const response = await fetch(getApiUrl("/api/auth/oidc/complete"), {
+          method: "POST", credentials: "same-origin",
+        })
+        if (!response.ok) return
+        const data = await response.json()
+        if (typeof data.token !== "string") return
+        localStorage.setItem("proxmenux-auth-token", data.token)
+        sessionStorage.removeItem("proxmenux-auth-401-handled")
+        onLogin()
+      }).catch(() => { /* Local recovery login remains available. */ })
+  }, [onLogin])
 
   useEffect(() => {
     // The Login screen is, by construction, the recovery path from any
@@ -171,6 +193,13 @@ export function Login({ onLogin }: LoginProps) {
         </div>
 
         <div className="bg-card border border-border rounded-lg p-6 shadow-lg">
+          {oidcEnabled && (
+            <Button type="button" className="w-full mb-4" onClick={() => {
+              window.location.assign(getApiUrl("/api/auth/oidc/start"))
+            }}>
+              {t("login.oidcSignIn")}
+            </Button>
+          )}
           <form onSubmit={handleLogin} className="space-y-4">
             {error && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 flex items-start gap-2">
