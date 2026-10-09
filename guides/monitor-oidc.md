@@ -12,6 +12,8 @@ the same host-management capability as that local account, including terminal
 and administrative actions. No account creation, group-based widening, or
 automatic email-only linking is supported. Local password/TOTP login stays
 available and must be configured and enabled before OIDC becomes available.
+Local TOTP applies to local login. OIDC authentication factors are controlled
+by the identity provider; this patch does not turn on or require MFA there.
 
 Authorization code flow uses S256 PKCE, nonce and browser-bound, expiring,
 single-use state. Discovery and signing-key requests require trusted HTTPS and
@@ -66,6 +68,21 @@ only through its separately approved rollback procedure.
 Run `python -m unittest discover -s AppImage/scripts/tests -p test_oidc.py -v`.
 Tests use ephemeral RSA keys, synthetic identities and mocked transport; they
 do not assert real IdP, browser, or packaged Linux AppImage acceptance.
+
+Repository validation (2026-10-09, Windows/Python 3.12):
+
+- 15 OIDC tests and all 5 existing local-account setup tests pass.
+- `npm ci --legacy-peer-deps --ignore-scripts` and `npm run build` pass.
+- Strict TypeScript checking reports 272 errors, identical with the fork's
+  original login component; none are in the changed login component. The
+  existing Next.js build configuration skips type/lint validation.
+- The 37 pre-existing Python tests have the same 1 failure and 7 errors with
+  the fork's original backend files: Linux filesystem/import assumptions,
+  Windows text decoding, and an unrelated network-script version assertion.
+- The Linux AppImage build and real identity-provider/browser flows have not
+  been executed. They remain activation prerequisites. The existing frontend
+  lockfile also produces an npm vulnerability warning for Next.js 15.1.9;
+  framework remediation is separate from this optional login change.
 
 References: [PyJWT validation](https://pyjwt.readthedocs.io/en/stable/usage.html),
 [Authentik OAuth2](https://docs.goauthentik.io/add-secure-apps/providers/oauth2/).

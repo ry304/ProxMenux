@@ -73,3 +73,6 @@ Thumbs.db
 .venv/
 __pycache__/
 *.pyc
+/AppImage/.next/
+/AppImage/out/
+/AppImage/next-env.d.ts

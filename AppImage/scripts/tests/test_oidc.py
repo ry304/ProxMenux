@@ -152,5 +152,42 @@ class OIDCTests(unittest.TestCase):
             with patch.object(oidc,'json_request',return_value=dict(META,**changes)):
                 with self.assertRaises(ValueError):oidc.metadata(CONFIG)
 
+    def test_callback_log_redaction(self):
+        raw='GET /api/auth/oidc/callback?code=private-code&state=private-state HTTP/1.1'
+        safe=oidc.redact_callback(raw)
+        self.assertNotIn('private-code',safe)
+        self.assertNotIn('private-state',safe)
+        self.assertIn('/api/auth/oidc/callback?[redacted]',safe)
+
+    def test_algorithm_confusion_rejected(self):
+        self.start()
+        token=jwt.encode(self.claims(),'synthetic-hmac-key-of-at-least-32-bytes',algorithm='HS256',headers={'kid':'test-key'})
+        with self.assertRaises(ValueError):
+            oidc.validate_identity(token,{'keys':[self.jwk]},CONFIG,self.query['nonce'][0])
+
+    def test_pending_capacity_and_replay(self):
+        pending=oidc.Pending()
+        handle=pending.put({'test':True})
+        self.assertTrue(pending.take(handle)['test'])
+        with self.assertRaises(ValueError):pending.take(handle)
+        for _ in range(1024):pending.put({})
+        with self.assertRaises(ValueError):pending.put({})
+
+    def test_canonical_origin_required(self):
+        self.assertEqual(self.client.get('/api/auth/oidc/start',base_url='https://evil.example').status_code,404)
+        self.assertEqual(self.client.get('/api/auth/oidc/start',base_url='http://monitor.example').status_code,404)
+
+    def test_real_local_session_expiry_cap(self):
+        # Exercise the real existing session issuer, but replace its private
+        # signing-key loader so no installation configuration is touched.
+        self.issue.stop()
+        with patch.object(oidc.auth_manager,'_get_jwt_secret',return_value='synthetic-signing-key-at-least-32-bytes'):
+            expiry=int(time.time())+60
+            token=oidc.auth_manager.generate_token('local-owner',expires_at=expiry)
+            claims=jwt.decode(token,'synthetic-signing-key-at-least-32-bytes',
+                              algorithms=[oidc.auth_manager.JWT_ALGORITHM],
+                              issuer=oidc.auth_manager.JWT_ISSUER,audience=oidc.auth_manager.JWT_AUDIENCE)
+            self.assertEqual(claims['exp'],expiry)
+
 
 if __name__ == '__main__':unittest.main()
